@@ -5,6 +5,8 @@ import matplotlib as mpl
 from matplotlib.pyplot import figure
 import statistics
 
+mpl.use('TkAgg')
+
 
 def annot_max(x, y, ax=None):
     xmax = max(x)
@@ -26,7 +28,7 @@ def styleSheet():
 
 
 def Data():
-    with open('lc_PN_10s.dat', 'r') as data:
+    with open('lc_pn_60s.dat', 'r') as data:
         x = []
         y = []
         for line in data:
@@ -37,6 +39,7 @@ def Data():
 
 
 def subinterval(n2):
+    tmpY = []
     sucetX = 0
     sucetY = 0
     i = 0
@@ -46,27 +49,34 @@ def subinterval(n2):
         while i < n2:
             sucetX += x[k]
             sucetY += y[k]
+            tmpY.append(y[k])
             i += 1
             k += 1
         i = 0
         priemerY = sucetY / n2
         priemerX = sucetX / n2
 
+        varArr.append(math.sqrt(statistics.variance(tmpY)))
         subintervalTok.append(priemerY)
         subintervalCas.append(priemerX)
 
+        tmpY.clear()
         priemerY = 0
         priemerX = 0
         sucetY = 0
         sucetX = 0
         j += 1
 
-    return subintervalCas, subintervalTok
+    return subintervalCas, subintervalTok, varArr
 
 
 def interval(n1):
+    priemerSigmaArr = []
+    priemerSigma = 0
+    sucetSigma = 0
     sucetX = 0
     sucetY = 0
+
     i = 0
     j = 1
     k = 0
@@ -74,35 +84,42 @@ def interval(n1):
         while i < n1:
             sucetX += subintervalCas[k]
             sucetY += subintervalTok[k]
+            sucetSigma += varArr[k]
             i += 1
             k += 1
         i = 0
         priemerY = sucetY / n1
         priemerX = sucetX / n1
+        priemerSigma = sucetSigma / n1
 
         intervalTok.append(priemerY)
         intervalCas.append(priemerX)
+        priemerSigmaArr.append(priemerSigma)
 
+        sucetSigma = 0
+        priemerSigma = 0
         priemerY = 0
         priemerX = 0
         sucetY = 0
         sucetX = 0
         j += 1
-    return intervalCas, intervalTok
+    sigmaZPS = math.sqrt(statistics.variance(priemerSigmaArr))
+
+    return intervalCas, intervalTok, priemerSigmaArr, sigmaZPS
 
 
 def smerOdchylka(n1):
-    sigmaMeanX = 0
     sigmaMeanY = 0
-    sigmaMeanX = 0
     sigmaMeanY = 0
-    sigmaX = math.sqrt(statistics.variance(intervalCas))
     sigmaY = math.sqrt(statistics.variance(intervalTok))
-    sigmaMeanX = sigmaX / n1
     sigmaMeanY = sigmaY / n1
 
-    return sigmaMeanX, sigmaMeanY
+    return sigmaMeanY
 
+
+sigmaZPS = 0
+varArr = []
+priemerSigmaArr = []
 
 subintervalTok = []
 subintervalCas = []
@@ -120,18 +137,15 @@ n2 = int(input("zadaj n2:"))
 
 x, y = Data()
 
-subintervalCas, subintervalTok = subinterval(n2)
-intervalCas, intervalTok = interval(n1)
+subintervalCas, subintervalTok, varArr = subinterval(n2)
+intervalCas, intervalTok, priemerSigmaArr, sigmaZPS = interval(n1)
 
+print("varArr = ", varArr)
+print("priemerSigmaArr = ", priemerSigmaArr)
+print("sigmaZPS = ", sigmaZPS)
+sigmaMeanY = smerOdchylka(n1)
 
-print(intervalCas)
-sigmaMeanX, sigmaMeanY = smerOdchylka(n1)
-print(sigmaMeanX)
-print(sigmaMeanY)
-
-# plt.plot(x, y)
-# plt.plot(subintervalCas, subintervalTok, linewidth=1)
-# plt.plot(intervalCas, intervalTok, linewidth=1)
-# plt.plot(sigmaX, sigmaY)
-plt.errorbar(intervalCas, intervalTok, xerr=sigmaMeanX, yerr=sigmaMeanY,ls='none', elinewidth=0.3, lw=1)
+# plt.plot(x, y, linewidth=0.3)
+plt.plot(intervalCas, priemerSigmaArr, 'g', linewidth=1, )
+plt.errorbar(intervalCas, priemerSigmaArr, yerr=sigmaMeanY, ls='none', elinewidth=1, capsize=3)
 plt.show()
